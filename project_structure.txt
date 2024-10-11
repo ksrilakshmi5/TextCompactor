@@ -1,0 +1,37 @@
+text-compressor
+│
+├── src
+│   ├── main
+│   │   ├── java
+│   │   │   └── com
+│   │   │       └── example
+│   │   │           └── textcompressor
+│   │   │               ├── controller
+│   │   │               │   └── TextCompressorController.java
+│   │   │               │
+│   │   │               ├── model
+│   │   │               │   └── TextRequest.java
+│   │   │               │
+│   │   │               ├── repository
+│   │   │               │   └── TextCompressorRepository.java
+│   │   │               │
+│   │   │               ├── service
+│   │   │               │   └── TextCompressorService.java
+│   │   │               │
+│   │   │               ├── TextCompressorApplication.java
+│   │   │               │
+│   │   │               └── util
+│   │   │                   └── HuffmanCoding.java
+│   │   └── resources
+│   │       ├── application.properties
+│   │       └── static
+│   │           ├── index.html
+│   │           └── styles.css
+│   └── test
+│       └── java
+│           └── com
+│               └── example
+│                   └── textcompressor
+│                       └── TextCompressorApplicationTests.java
+│
+└── pom.xml

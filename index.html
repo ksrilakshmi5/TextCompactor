@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Text Compressor</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Compressor</h1>
+        <textarea id="textInput" placeholder="Enter text here..."></textarea>
+        <button onclick="compressText()">Compress Text</button>
+        <h2>Compressed Text:</h2>
+        <p id="compressedOutput"></p>
+        <h2>Previous Requests:</h2>
+        <ul id="requestsList"></ul>
+    </div>
+
+    <script>
+        async function compressText() {
+            const text = document.getElementById('textInput').value;
+            const response = await fetch('/api/text/compress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const result = await response.json();
+            document.getElementById('compressedOutput').innerText = result.encodedText;
+            loadRequests();
+        }
+
+        async function loadRequests() {
+            const response = await fetch('/api/text/requests');
+            const requests = await response.json();
+            const requestsList = document.getElementById('requestsList');
+            requestsList.innerHTML = '';
+            requests.forEach(req => {
+                const li = document.createElement('li');
+                li.innerText = `Original: ${req.text} | Compressed: ${req.encodedText}`;
+                requestsList.appendChild(li);
+            });
+        }
+
+        window.onload = loadRequests;
+    </script>
+</body>
+</html>
