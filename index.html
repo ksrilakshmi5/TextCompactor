@@ -3,46 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
     <title>Text Compressor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            max-width: 800px;
+        }
+        textarea, button {
+            display: block;
+            margin: 15px 0;
+            width: 100%;
+            padding: 10px;
+        }
+        textarea {
+            height: 100px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
+    <div>
         <h1>Text Compressor</h1>
-        <textarea id="textInput" placeholder="Enter text here..."></textarea>
-        <button onclick="compressText()">Compress Text</button>
+        <form action="/api/text/compress" method="POST">
+            <textarea name="text" placeholder="Enter text here..." required></textarea>
+            <button type="submit">Compress Text</button>
+        </form>
+
         <h2>Compressed Text:</h2>
-        <p id="compressedOutput"></p>
+        <p>${compressedText}</p>
+
         <h2>Previous Requests:</h2>
-        <ul id="requestsList"></ul>
+        <ul>
+            <!-- Example of displaying previous requests dynamically -->
+            <c:forEach var="request" items="${previousRequests}">
+                <li>Original: ${request.text} | Compressed: ${request.encodedText}</li>
+            </c:forEach>
+        </ul>
     </div>
-
-    <script>
-        async function compressText() {
-            const text = document.getElementById('textInput').value;
-            const response = await fetch('/api/text/compress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-            const result = await response.json();
-            document.getElementById('compressedOutput').innerText = result.encodedText;
-            loadRequests();
-        }
-
-        async function loadRequests() {
-            const response = await fetch('/api/text/requests');
-            const requests = await response.json();
-            const requestsList = document.getElementById('requestsList');
-            requestsList.innerHTML = '';
-            requests.forEach(req => {
-                const li = document.createElement('li');
-                li.innerText = `Original: ${req.text} | Compressed: ${req.encodedText}`;
-                requestsList.appendChild(li);
-            });
-        }
-
-        window.onload = loadRequests;
-    </script>
 </body>
 </html>
