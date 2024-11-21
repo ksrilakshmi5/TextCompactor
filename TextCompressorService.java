@@ -10,13 +10,7 @@ import java.util.List;
 
 @Service
 public class TextCompressorService {
-    private final TextCompressorRepository repository;
-
-    @Autowired
-    public TextCompressorService(TextCompressorRepository repository) {
-        this.repository = repository;
-    }
-
+    
     public TextRequest saveTextRequest(TextRequest request) {
         String encoded = HuffmanCoding.encode(request.getText());
         request.setEncodedText(encoded);
