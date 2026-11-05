@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Text Compressor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17231e;
+      --muted: #64736b;
+      --paper: #f5f7f2;
+      --surface: #ffffff;
+      --line: #dce4dc;
+      --green: #176b4b;
+      --green-dark: #10513a;
+      --mint: #e5f2e9;
+      --coral: #c65a43;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#d7e1d7 0.7px, transparent 0.7px);
+      background-size: 18px 18px;
+    }
+
+    main {
+      width: min(900px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 48px 0 64px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+
+    .mark {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 8px;
+      color: white;
+      background: var(--green);
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 26px 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(36px, 7vw, 58px);
+      font-weight: 500;
+      line-height: 1.04;
+    }
+
+    .intro {
+      margin: 0 0 30px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    .workspace {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 14px 35px rgb(23 35 30 / 7%);
+    }
+
+    .input-panel { padding: 22px; }
+
+    .file-workspace { margin-bottom: 32px; }
+
+    .file-mode-switch {
+      display: flex;
+      gap: 4px;
+      padding: 10px 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mode-button {
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 0;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .mode-button:hover:not(:disabled) { color: var(--green); background: transparent; transform: none; }
+    .mode-button[aria-pressed="true"] { border-bottom: 2px solid var(--green); color: var(--green); }
+
+    .file-panel { padding: 22px; }
+    .file-panel[hidden] { display: none; }
+    .file-panel h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 500; }
+    .file-intro { margin: 7px 0 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .file-picker-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+
+    .file-picker {
+      display: block;
+      width: 100%;
+      padding: 13px;
+      border: 1px dashed #9eb4a3;
+      border-radius: 5px;
+      color: var(--ink);
+      background: #f9fbf8;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .file-info { min-height: 18px; margin: 8px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+    .file-status { min-height: 20px; margin: 14px 0 0; font-size: 13px; line-height: 1.5; }
+    .file-status.error { color: var(--coral); }
+    .file-status.success { color: var(--green); }
+
+    .secondary-heading { margin: 0 0 14px; font-family: Georgia, "Times New Roman", serif; font-size: 25px; font-weight: 500; }
+
+    .label-row, .result-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    label, .result-heading h2 {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 190px;
+      margin-top: 12px;
+      padding: 15px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      outline: none;
+      color: var(--ink);
+      background: #fcfdfb;
+      font: 16px/1.6 "Segoe UI", "Trebuchet MS", sans-serif;
+    }
+
+    textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgb(23 107 75 / 12%); }
+    textarea::placeholder { color: #97a39b; }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .hint { color: var(--muted); font-size: 12px; }
+
+    button {
+      min-height: 42px;
+      padding: 0 17px;
+      border: 0;
+      border-radius: 5px;
+      color: white;
+      background: var(--green);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 140ms ease, transform 140ms ease;
+    }
+
+    button:hover:not(:disabled) { background: var(--green-dark); transform: translateY(-1px); }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    .message { min-height: 20px; margin: 12px 0 0; color: var(--coral); font-size: 13px; }
+
+    .result {
+      padding: 22px;
+      border-top: 1px solid var(--line);
+      background: #f9fbf8;
+    }
+
+    .result-heading { margin-bottom: 15px; }
+    .result-heading h2 { margin: 0; }
+    .result-state { color: var(--muted); font-size: 12px; }
+
+    .output-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 0.36fr); gap: 12px; }
+
+    .output-block {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: white;
+    }
+
+    .output-label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    pre {
+      min-height: 44px;
+      max-height: 220px;
+      margin: 0;
+      overflow: auto;
+      color: var(--ink);
+      font: 13px/1.6 Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .copy-button {
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      color: var(--green);
+      background: white;
+      font-size: 12px;
+    }
+
+    .copy-button:hover:not(:disabled) { color: white; }
+
+    .history { margin-top: 34px; }
+
+    .history-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .history-heading h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 25px;
+      font-weight: 500;
+    }
+
+    .history-count { margin-left: 8px; color: var(--muted); font: 12px "Segoe UI", "Trebuchet MS", sans-serif; }
+
+    .refresh-button {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      color: var(--green);
+      background: var(--surface);
+      font-size: 12px;
+    }
+
+    .refresh-button:hover:not(:disabled) { color: white; }
+
+    .history-list {
+      overflow: hidden;
+      border-top: 1px solid var(--line);
+    }
+
+    .history-state { padding: 20px 2px; color: var(--muted); font-size: 13px; }
+    .history-state.error { color: var(--coral); }
+
+    .request-row { padding: 17px 2px; border-bottom: 1px solid var(--line); }
+
+    .request-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 9px;
+    }
+
+    .request-title { font-size: 13px; font-weight: 700; }
+    .request-size { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+    .delete-button {
+      min-height: 30px;
+      margin-left: auto;
+      padding: 0 10px;
+      border: 1px solid #e8c9c1;
+      color: var(--coral);
+      background: white;
+      font-size: 12px;
+    }
+
+    .delete-button:hover:not(:disabled) { color: white; background: var(--coral); }
+    .request-delete-status { color: var(--coral); font-size: 12px; }
+
+    .request-text {
+      margin: 0;
+      color: #35443b;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .request-details { margin-top: 10px; }
+    .request-details summary { width: fit-content; color: var(--green); font-size: 12px; cursor: pointer; }
+    .request-details pre { margin-top: 9px; padding: 11px; border: 1px solid var(--line); border-radius: 5px; background: white; }
+    .request-code-label { display: block; margin-top: 10px; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+
+    @media (max-width: 620px) {
+      main { width: min(100% - 24px, 900px); padding-top: 28px; }
+      .input-panel, .result, .file-panel { padding: 17px; }
+      .file-mode-switch { padding-right: 12px; padding-left: 12px; }
+      .output-grid { grid-template-columns: 1fr; }
+      .actions { align-items: flex-start; flex-direction: column; }
+      .actions button { width: 100%; }
+      textarea { min-height: 160px; }
+      .history-heading { align-items: flex-start; }
+      .request-top { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .delete-button { margin-left: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topline"><span class="mark" aria-hidden="true">T</span> Huffman compression</div>
+    <h1>Text File Compressor</h1>
+    <p class="intro">Compress a text file into a compact archive, then restore it whenever you need it.</p>
+
+    <section class="workspace file-workspace" aria-label="File compression and decompression">
+      <div class="file-mode-switch" role="group" aria-label="File operation">
+        <button id="file-compress-mode" class="mode-button" type="button" aria-pressed="true">Compress file</button>
+        <button id="file-decompress-mode" class="mode-button" type="button" aria-pressed="false">Decompress archive</button>
+      </div>
+
+      <form id="file-compress-form" class="file-panel">
+        <h2>Choose a text file</h2>
+        <p class="file-intro">The compressed .huff archive downloads to your device. Keep it to decompress later. Maximum file size: 25 MB.</p>
+        <label class="file-picker-label" for="source-file">Text file</label>
+        <input id="source-file" class="file-picker" type="file" accept=".txt,.csv,.log,.json,text/*">
+        <p id="source-file-info" class="file-info">No file selected</p>
+        <div class="actions">
+          <span class="hint">The archive contains the Huffman table needed for restoration.</span>
+          <button id="file-compress-button" type="submit">Compress and download</button>
+        </div>
+        <p id="file-compress-status" class="file-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <form id="file-decompress-form" class="file-panel" hidden>
+        <h2>Restore a text file</h2>
+        <p class="file-intro">Choose a .huff archive created by this application. The restored text downloads to your device. Maximum archive size: 25 MB.</p>
+        <label class="file-picker-label" for="archive-file">Huffman archive</label>
+        <input id="archive-file" class="file-picker" type="file" accept=".huff,application/octet-stream">
+        <p id="archive-file-info" class="file-info">No archive selected</p>
+        <div class="actions">
+          <span class="hint">Only archives produced by this application can be restored.</span>
+          <button id="file-decompress-button" type="submit">Decompress and download</button>
+        </div>
+        <p id="file-decompress-status" class="file-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <h2 class="secondary-heading">Quick text compression</h2>
+    <section class="workspace" aria-label="Text compression tool">
+      <form id="compress-form" class="input-panel">
+        <div class="label-row">
+          <label for="text-input">Your text</label>
+          <span id="character-count" class="count">0 characters</span>
+        </div>
+        <textarea id="text-input" placeholder="Type or paste your text here..." required></textarea>
+        <div class="actions">
+          <span class="hint">Your text is compressed and saved with its code table.</span>
+          <button id="compress-button" type="submit">Compress text</button>
+        </div>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </form>
+
+      <section id="result" class="result" aria-label="Compression result" hidden>
+        <div class="result-heading">
+          <h2>Encoded result</h2>
+          <span id="result-state" class="result-state"></span>
+        </div>
+        <div class="output-grid">
+          <div class="output-block">
+            <span class="output-label">Encoded bits</span>
+            <pre id="encoded-output"></pre>
+          </div>
+          <div class="output-block">
+            <span class="output-label">Huffman code table</span>
+            <pre id="table-output"></pre>
+          </div>
+        </div>
+        <div class="actions">
+          <span class="hint">The code table is required to decode the bit stream.</span>
+          <button id="copy-button" class="copy-button" type="button">Copy encoded bits</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="history" aria-labelledby="history-title">
+      <div class="history-heading">
+        <h2 id="history-title">Saved requests <span id="history-count" class="history-count"></span></h2>
+        <button id="refresh-button" class="refresh-button" type="button">Refresh</button>
+      </div>
+      <div id="history-list" class="history-list" aria-live="polite">
+        <p class="history-state">Loading requests...</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const fileCompressMode = document.querySelector("#file-compress-mode");
+    const fileDecompressMode = document.querySelector("#file-decompress-mode");
+    const fileCompressForm = document.querySelector("#file-compress-form");
+    const fileDecompressForm = document.querySelector("#file-decompress-form");
+    const sourceFile = document.querySelector("#source-file");
+    const archiveFile = document.querySelector("#archive-file");
+    const sourceFileInfo = document.querySelector("#source-file-info");
+    const archiveFileInfo = document.querySelector("#archive-file-info");
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      const units = ["KB", "MB", "GB"];
+      let size = bytes / 1024;
+      let unit = units[0];
+      for (let index = 1; size >= 1024 && index < units.length; index++) {
+        size /= 1024;
+        unit = units[index];
+      }
+      return `${size.toFixed(1)} ${unit}`;
+    }
+
+    function setFileMode(mode) {
+      const compressing = mode === "compress";
+      fileCompressForm.hidden = !compressing;
+      fileDecompressForm.hidden = compressing;
+      fileCompressMode.setAttribute("aria-pressed", String(compressing));
+      fileDecompressMode.setAttribute("aria-pressed", String(!compressing));
+    }
+
+    function downloadFile(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function submitFile(event, endpoint, input, button, status, outputName, isCompression) {
+      event.preventDefault();
+      status.className = "file-status";
+      const file = input.files[0];
+      if (!file) {
+        status.textContent = "Choose a file first.";
+        status.classList.add("error");
+        return;
+      }
+
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = isCompression ? "Compressing..." : "Decompressing...";
+      status.textContent = "Processing file...";
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(endpoint, { method: "POST", body: formData });
+        if (!response.ok) {
+          throw new Error(await response.text() || `File processing failed (${response.status}).`);
+        }
+
+        const output = await response.blob();
+        downloadFile(output, outputName);
+        status.classList.add("success");
+        if (isCompression) {
+          const compressedSize = Number(response.headers.get("X-Compressed-Size") || output.size);
+          const difference = file.size - compressedSize;
+          const percent = file.size === 0 ? 0 : Math.round(Math.abs(difference) / file.size * 100);
+          const comparison = difference >= 0 ? `${percent}% smaller` : `${percent}% larger`;
+          status.textContent = `${file.name}: ${formatBytes(file.size)} → ${formatBytes(compressedSize)} (${comparison}). Archive downloaded.`;
+        } else {
+          status.textContent = `Restored ${file.name} (${formatBytes(output.size)}). Text file downloaded.`;
+        }
+      } catch (error) {
+        status.classList.add("error");
+        status.textContent = error.message || "Could not reach the file service.";
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    }
+
+    fileCompressMode.addEventListener("click", () => setFileMode("compress"));
+    fileDecompressMode.addEventListener("click", () => setFileMode("decompress"));
+    sourceFile.addEventListener("change", () => {
+      const file = sourceFile.files[0];
+      sourceFileInfo.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "No file selected";
+    });
+    archiveFile.addEventListener("change", () => {
+      const file = archiveFile.files[0];
+      archiveFileInfo.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "No archive selected";
+    });
+    fileCompressForm.addEventListener("submit", (event) => submitFile(
+      event, "/api/files/compress", sourceFile,
+      document.querySelector("#file-compress-button"),
+      document.querySelector("#file-compress-status"), "compressed.huff", true
+    ));
+    fileDecompressForm.addEventListener("submit", (event) => submitFile(
+      event, "/api/files/decompress", archiveFile,
+      document.querySelector("#file-decompress-button"),
+      document.querySelector("#file-decompress-status"), "decompressed.txt", false
+    ));
+
+    const form = document.querySelector("#compress-form");
+    const textInput = document.querySelector("#text-input");
+    const characterCount = document.querySelector("#character-count");
+    const compressButton = document.querySelector("#compress-button");
+    const message = document.querySelector("#message");
+    const result = document.querySelector("#result");
+    const encodedOutput = document.querySelector("#encoded-output");
+    const tableOutput = document.querySelector("#table-output");
+    const resultState = document.querySelector("#result-state");
+    const copyButton = document.querySelector("#copy-button");
+    const historyList = document.querySelector("#history-list");
+    const historyCount = document.querySelector("#history-count");
+    const refreshButton = document.querySelector("#refresh-button");
+
+    function showHistoryState(text, isError = false) {
+      historyList.replaceChildren();
+      const state = document.createElement("p");
+      state.className = `history-state${isError ? " error" : ""}`;
+      state.textContent = text;
+      historyList.append(state);
+    }
+
+    function createRequestRow(request, index) {
+      const row = document.createElement("article");
+      row.className = "request-row";
+      const displayNumber = index + 1;
+
+      const header = document.createElement("div");
+      header.className = "request-top";
+      const title = document.createElement("span");
+      title.className = "request-title";
+      title.textContent = `Request #${displayNumber}`;
+      const size = document.createElement("span");
+      size.className = "request-size";
+      size.textContent = `${[...(request.text ?? "")].length} characters · ${request.encodedText?.length ?? 0} bits`;
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-button";
+      deleteButton.type = "button";
+      deleteButton.textContent = "Delete";
+      deleteButton.setAttribute("aria-label", `Delete request ${displayNumber}`);
+      const deleteStatus = document.createElement("span");
+      deleteStatus.className = "request-delete-status";
+      deleteStatus.setAttribute("role", "status");
+      header.append(title, size, deleteButton, deleteStatus);
+
+      deleteButton.addEventListener("click", async () => {
+        deleteButton.disabled = true;
+        deleteStatus.textContent = "Deleting...";
+        try {
+          const response = await fetch(`/api/text/requests/${encodeURIComponent(request.id)}`, {
+            method: "DELETE"
+          });
+          if (!response.ok) {
+            throw new Error(`Delete failed (${response.status}).`);
+          }
+          await loadRequests();
+        } catch (error) {
+          deleteButton.disabled = false;
+          deleteStatus.textContent = error.message || "Could not delete request.";
+        }
+      });
+
+      const originalText = document.createElement("p");
+      originalText.className = "request-text";
+      originalText.textContent = request.text ?? "";
+      row.append(header, originalText);
+
+      const details = document.createElement("details");
+      details.className = "request-details";
+      const summary = document.createElement("summary");
+      summary.textContent = "Show encoded data";
+      const bits = document.createElement("pre");
+      bits.textContent = request.encodedText || "(empty text)";
+      const codeLabel = document.createElement("span");
+      codeLabel.className = "request-code-label";
+      codeLabel.textContent = "Huffman code table";
+      const codeTable = document.createElement("pre");
+      codeTable.textContent = request.codeTable || "(empty text)";
+      details.append(summary, bits, codeLabel, codeTable);
+      row.append(details);
+      return row;
+    }
+
+    async function loadRequests() {
+      refreshButton.disabled = true;
+      historyCount.textContent = "";
+      showHistoryState("Loading requests...");
+
+      try {
+        const response = await fetch("/api/text/requests");
+        if (!response.ok) {
+          throw new Error(`Could not load requests (${response.status}).`);
+        }
+        const requests = await response.json();
+        historyCount.textContent = `(${requests.length})`;
+        if (requests.length === 0) {
+          showHistoryState("No saved requests yet.");
+          return;
+        }
+        historyList.replaceChildren(...requests.map(createRequestRow));
+      } catch (error) {
+        showHistoryState(error.message || "Could not load saved requests.", true);
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    textInput.addEventListener("input", () => {
+      const count = [...textInput.value].length;
+      characterCount.textContent = `${count} ${count === 1 ? "character" : "characters"}`;
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "";
+      compressButton.disabled = true;
+      compressButton.textContent = "Compressing...";
+
+      try {
+        const response = await fetch("/api/text/compress", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain; charset=UTF-8" },
+          body: textInput.value
+        });
+        if (!response.ok) {
+          throw new Error(`Compression failed (${response.status}).`);
+        }
+
+        const compressed = await response.json();
+        encodedOutput.textContent = compressed.encodedText ?? "";
+        tableOutput.textContent = compressed.codeTable || "(empty text)";
+        resultState.textContent = `${compressed.encodedText?.length ?? 0} bits`;
+        result.hidden = false;
+        copyButton.disabled = !compressed.encodedText;
+        await loadRequests();
+      } catch (error) {
+        message.textContent = error.message || "Could not reach the compression service.";
+      } finally {
+        compressButton.disabled = false;
+        compressButton.textContent = "Compress text";
+      }
+    });
+
+    copyButton.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(encodedOutput.textContent);
+      copyButton.textContent = "Copied";
+      window.setTimeout(() => { copyButton.textContent = "Copy encoded bits"; }, 1400);
+    });
+
+    refreshButton.addEventListener("click", loadRequests);
+    loadRequests();
+  </script>
+</body>
+</html>
